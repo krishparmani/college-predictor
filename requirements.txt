@@ -1,0 +1,24 @@
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+
+catboost
+xgboost
+
+joblib
+dill
+
+flask
+
+requests
+beautifulsoup4
+lxml
+
+pdfplumber
+camelot-py
+
+openpyxl
+
+# -e .
