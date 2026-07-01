@@ -1,3 +1,10 @@
+"""
+Recommendation Engine
+
+Handles filtering, classification, ranking and recommendation
+generation for MHT CET college prediction.
+"""
+
 import pandas as pd
 
 from src.logger import logging
@@ -14,6 +21,19 @@ class RecommendationEngine:
         logging.info(f"Dataset loaded successfully with {self.df.shape[0]} rows.")
 
     def filter_branch(self, branch):
+        """
+        Filter dataset based on selected branch.
+
+        Parameters
+        ----------
+        branch : str
+            Branch selected by the user.
+
+        Returns
+        -------
+        pd.DataFrame
+            Filtered dataframe containing only the selected branch.
+        """
 
         logging.info(f"Filtering dataset for branch: {branch}")
 
@@ -29,6 +49,20 @@ class RecommendationEngine:
     
     def filter_category(self, dataframe, category):
 
+        """
+        Filter dataset based on selected category.
+
+        Parameters
+        ----------
+        category : str
+            Category selected by the user.
+
+        Returns
+        -------
+        pd.DataFrame
+            Filtered dataframe containing only the selected category.
+        """
+
         logging.info(f"Filtering dataset for category: {category}")
 
         filtered_df = dataframe[
@@ -42,6 +76,20 @@ class RecommendationEngine:
         return filtered_df
 
     def filter_year(self, dataframe, academic_year):
+
+        """
+        Filter dataset based on selected academic year.
+
+        Parameters
+        ----------
+        academic_year : str
+            Academic year selected by the user.
+
+        Returns
+        -------
+        pd.DataFrame
+            Filtered dataframe containing only the selected academic year.
+        """
 
         logging.info(
             f"Filtering dataset for academic year: {academic_year}"
@@ -58,6 +106,20 @@ class RecommendationEngine:
         return filtered_df
 
     def classify(self, dataframe, percentile):
+
+        """
+        Classify colleges based on percentile difference.
+
+        Parameters
+        ----------
+        percentile : float
+            Percentile of the user.
+
+        Returns
+        -------
+        pd.DataFrame
+            Filtered dataframe containing only the selected academic year.
+        """
 
         logging.info(
             f"Classifying colleges for percentile: {percentile}"
@@ -91,32 +153,55 @@ class RecommendationEngine:
         branch,
         academic_year=None
     ):
+        """
+        Generate college recommendations based on user inputs.
+
+        Returns
+        -------
+        dict
+            {
+                "topRecommendation": pd.Series | None,
+                "safe": pd.DataFrame,
+                "target": pd.DataFrame,
+                "dream": pd.DataFrame
+            }
+        """
 
         logging.info("Recommendation started.")
+
+        # ---------------------------------------------------
+        # Step 1 : Apply Filters
+        # ---------------------------------------------------
 
         branch_df = self.filter_branch(branch)
 
         category_df = self.filter_category(
             branch_df,
-        category
+            category
         )
 
         if academic_year is None:
             academic_year = self.df["academic_year"].max()
 
-        logging.info(
-            f"Using academic year: {academic_year}"
-        )
+        logging.info(f"Using academic year: {academic_year}")
 
         year_df = self.filter_year(
             category_df,
             academic_year
         )
 
+        # ---------------------------------------------------
+        # Step 2 : Classify Recommendations
+        # ---------------------------------------------------
+
         classified_df = self.classify(
             year_df,
             percentile
         )
+
+        # ---------------------------------------------------
+        # Step 3 : Improve Recommendation Quality
+        # ---------------------------------------------------
 
         classified_df = self.remove_duplicates(
             classified_df
@@ -130,6 +215,10 @@ class RecommendationEngine:
             classified_df
         )
 
+        # ---------------------------------------------------
+        # Step 4 : Split Recommendations
+        # ---------------------------------------------------
+
         safe = classified_df[
             classified_df["chance"] == "Safe"
         ]
@@ -142,6 +231,10 @@ class RecommendationEngine:
             classified_df["chance"] == "Dream"
         ]
 
+        # ---------------------------------------------------
+        # Step 5 : Select Best Recommendation
+        # ---------------------------------------------------
+
         top_recommendation = None
 
         if not safe.empty:
@@ -153,7 +246,11 @@ class RecommendationEngine:
         elif not dream.empty:
             top_recommendation = dream.iloc[0]
 
-        logging.info("Recommendation generation completed.")
+        logging.info(
+            f"Returning {len(safe)} safe, "
+            f"{len(target)} target and "
+            f"{len(dream)} dream recommendations."
+        )
 
         return {
             "topRecommendation": top_recommendation,
@@ -166,6 +263,17 @@ class RecommendationEngine:
         """
         Keep only one row for each College + Branch combination.
         Preference is given to the highest percentile cutoff.
+        """
+        """
+        Parameters
+        ----------
+        df : pd.DataFrame
+            DataFrame containing college recommendations.
+
+        Returns
+        -------
+        pd.DataFrame
+            Filtered dataframe containing only the selected academic year.
         """
 
         logging.info("Removing duplicate college recommendations.")
@@ -188,10 +296,17 @@ class RecommendationEngine:
 
     def rank_recommendations(self, df):
         """
-        Rank recommendations based on chance and percentile difference.
+        Rank recommendations using admission chance and percentile difference.
+
+        Returns
+        -------
+        pd.DataFrame
+            Ranked recommendation dataframe.
         """
 
-        logging.info("Ranking recommendations.")
+        logging.info(
+            f"Ranking completed for {len(df)} recommendations."
+        )
 
         chance_priority = {
             "Safe": 1,
@@ -227,7 +342,12 @@ class RecommendationEngine:
     def add_confidence_score(self, df):
 
         """
-        Adds confidence score based on percentile difference.
+        Add rule-based confidence score to every recommendation.
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe with confidence column.
         """
 
         logging.info("Calculating confidence score.")
@@ -264,6 +384,8 @@ class RecommendationEngine:
             "difference"
         ].apply(calculate)
 
-        logging.info("Confidence score calculated.")
+        logging.info(
+            f"Confidence scores calculated for {len(confidence_df)} recommendations."
+        )
 
         return confidence_df
