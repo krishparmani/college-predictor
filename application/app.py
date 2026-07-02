@@ -1,8 +1,11 @@
 from flask import Flask
+from flask_cors import CORS
 
 from application.routes.recommendation import recommendation_bp
 
 app = Flask(__name__)
+
+CORS(app)
 
 app.register_blueprint(recommendation_bp)
 

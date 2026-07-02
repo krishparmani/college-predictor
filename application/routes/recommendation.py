@@ -20,6 +20,13 @@ recommendation_bp = Blueprint(
     __name__
 )
 
+CATEGORY_MAPPING = {
+    "OPEN": "GOPENS",
+    "OBC": "GOBCS",
+    "SC": "GSCS",
+    "ST": "GSTS",
+    "EWS": "EWS"
+}
 
 @recommendation_bp.route("/recommend", methods=["POST"])
 def recommend():
@@ -28,9 +35,14 @@ def recommend():
 
         data = request.get_json()
 
+        mapped_category = CATEGORY_MAPPING.get(
+            data["category"],
+            data["category"]
+        )
+
         validate_input(
             percentile=data["percentile"],
-            category=data["category"],
+            category=mapped_category,
             branch=data["branch"],
             academic_year=data.get("academic_year"),
             valid_categories=VALID_CATEGORIES,
@@ -39,7 +51,7 @@ def recommend():
 
         result = engine.recommend(
             percentile=data["percentile"],
-            category=data["category"],
+            category=mapped_category,
             branch=data["branch"],
             academic_year=data.get("academic_year")
         )

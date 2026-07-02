@@ -28,9 +28,9 @@ def validate_input(
             "Branch is required."
         )
 
-    if academic_year not in VALID_YEARS:
+    if academic_year is not None and academic_year not in valid_academic_years:
         raise ValueError(
-            f"Academic year must be one of {VALID_YEARS}"
+            f"Academic year must be one of {valid_academic_years}"
         )
 
     if category not in valid_categories:
